@@ -1,0 +1,135 @@
+---
+title: "First tidymodels Example"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+```
+
+## Import packages
+
+```{r}
+library(tidyverse)
+library(tidymodels)
+```
+
+
+## Import data
+
+```{r}
+penguins_raw <- read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-07-28/penguins.csv')
+```
+
+
+```{r}
+penguins <- penguins_raw %>% 
+  filter(!is.na(sex))
+```
+
+
+## Split data into training and test datasets
+
+```{r}
+set.seed(4254)
+split <- initial_split(penguins_raw, prop = 0.8, strata = species)
+
+peng_training <- training(split)
+peng_test <- testing(split)
+
+peng_training %>% 
+  is.na() %>% 
+  colSums()
+peng_test %>% 
+  is.na() %>% 
+  colSums()
+
+peng_kfolds <- vfold_cv(peng_training)
+```
+
+## Prepare the recipe
+
+
+```{r}
+peng_rec <- recipe(species ~ ., data = penguins) %>% 
+  step_knnimpute(sex) %>% 
+  step_dummy(all_nominal(), -all_outcomes()) %>% 
+  step_normalize(all_numeric()) # to remove
+
+peng_rec %>% prep() %>% juice()
+```
+
+
+## Create the models
+
+
+By using the parsnip package to define ML models. Parsnip offers a general interface for most the ML algorithms.
+
+```{r}
+
+knn_spec <- nearest_neighbor(
+  neighbors = tune()
+) %>% set_mode("classification") %>% 
+  set_engine("kknn")
+
+knn_spec
+
+rf_spec <- rand_forest(
+  mtry = tune(),
+  trees = tune(),
+  min_n = tune()
+) %>% set_mode("classification") %>% 
+  set_engine("ranger")
+
+rf_spec
+```
+
+
+## Fine tuning the models
+
+
+Using the tune and dials packages.
+
+ * dials: create the params grid
+ * tune: will tune the params according to the combinations of the grid
+ 
+
+Here we see the list of parameters for our models
+
+```{r}
+parameters(knn_spec)
+parameters(rf_spec)
+```
+
+Here we use `grid_regular()` from dials packages and `parameters()` to see the list of grid parameters.
+
+```{r}
+grid_regular(parameters(knn_spec), levels = 10)
+#grid_regular(parameters(rf_spec), levels = 10)
+```
+
+
+
+```{r}
+peng_wf <- workflow() %>%
+  add_recipe(peng_rec) %>%
+  add_model(knn_spec)
+```
+
+
+```{r}
+library(doParallel)
+doParallel::registerDoParallel()
+
+set.seed(345)
+tune_res <- tune_grid(
+  peng_wf,
+  resamples = peng_kfolds,
+  grid = 20
+)
+
+tune_res
+```
+
+
+
