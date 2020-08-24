@@ -1,6 +1,8 @@
 ---
 title: "First tidymodels Example"
 output: html_document
+editor_options: 
+  chunk_output_type: inline
 ---
 
 ```{r setup, include=FALSE}
@@ -23,26 +25,42 @@ penguins_raw <- read_csv('https://raw.githubusercontent.com/rfordatascience/tidy
 
 
 ```{r}
+penguins_raw %>% 
+  is.na() %>% 
+  colSums()
+
+penguins_raw %>% 
+  head(10)
+
 penguins <- penguins_raw %>% 
-  filter(!is.na(sex))
+  select(-c(sex, year)) %>% 
+  na.omit()
+
+penguins %>% 
+  head(10)
 ```
 
+
+```{r}
+library(skimr)
+skim(penguins)
+```
 
 ## Split data into training and test datasets
 
 ```{r}
 set.seed(4254)
-split <- initial_split(penguins_raw, prop = 0.8, strata = species)
+split <- initial_split(penguins, prop = 0.8, strata = species)
 
 peng_training <- training(split)
 peng_test <- testing(split)
 
 peng_training %>% 
-  is.na() %>% 
-  colSums()
+  count(species, sort = TRUE)
+
+
 peng_test %>% 
-  is.na() %>% 
-  colSums()
+  count(species, sort = TRUE)
 
 peng_kfolds <- vfold_cv(peng_training)
 ```
@@ -52,11 +70,11 @@ peng_kfolds <- vfold_cv(peng_training)
 
 ```{r}
 peng_rec <- recipe(species ~ ., data = penguins) %>% 
-  step_knnimpute(sex) %>% 
   step_dummy(all_nominal(), -all_outcomes()) %>% 
-  step_normalize(all_numeric()) # to remove
+  step_normalize(all_numeric()) %>% # to remove
+  prep(training = peng_training)
 
-peng_rec %>% prep() %>% juice()
+peng_rec  %>% juice()
 ```
 
 
@@ -66,7 +84,6 @@ peng_rec %>% prep() %>% juice()
 By using the parsnip package to define ML models. Parsnip offers a general interface for most the ML algorithms.
 
 ```{r}
-
 knn_spec <- nearest_neighbor(
   neighbors = tune()
 ) %>% set_mode("classification") %>% 
@@ -75,7 +92,7 @@ knn_spec <- nearest_neighbor(
 knn_spec
 
 rf_spec <- rand_forest(
-  mtry = tune(),
+  mtry = 5,
   trees = tune(),
   min_n = tune()
 ) %>% set_mode("classification") %>% 
@@ -105,10 +122,65 @@ Here we use `grid_regular()` from dials packages and `parameters()` to see the l
 
 ```{r}
 grid_regular(parameters(knn_spec), levels = 10)
-#grid_regular(parameters(rf_spec), levels = 10)
+grid_regular(parameters(rf_spec), levels = 10)
 ```
 
 
+
+```{r}
+peng_wf <- workflow() %>%
+  add_recipe(peng_rec) %>%
+  add_model(rf_spec)
+```
+
+
+```{r}
+library(doParallel)
+doParallel::registerDoParallel()
+
+set.seed(345)
+tune_res <- tune_grid(
+  peng_wf,
+  resamples = peng_kfolds,
+  grid = 20
+)
+
+tune_res
+```
+
+```{r}
+tune_res %>%
+  collect_metrics() %>%
+  filter(.metric == "roc_auc") %>%
+  select(mean, trees, min_n) %>%
+  pivot_longer(trees:min_n,
+    values_to = "value",
+    names_to = "parameter"
+  ) %>%
+  ggplot(aes(value, mean, color = parameter)) +
+  geom_point(show.legend = FALSE) +
+  facet_wrap(~parameter, scales = "free_x") +
+  labs(x = NULL, y = "AUC")
+```
+
+
+
+```{r}
+best_auc <- select_best(tune_res, "roc_auc")
+
+final_rf <- finalize_model(
+  rf_spec,
+  best_auc
+)
+
+final_rf
+```
+
+
+
+
+
+## KNN tuning and choosing the best model
 
 ```{r}
 peng_wf <- workflow() %>%
@@ -130,6 +202,91 @@ tune_res <- tune_grid(
 
 tune_res
 ```
+
+```{r}
+tune_res %>%
+  collect_metrics() %>%
+  filter(.metric == "roc_auc") %>%
+  select(mean, neighbors) %>%
+  ggplot(aes(neighbors, mean)) +
+  geom_point(show.legend = FALSE) +
+  labs(x = NULL, y = "AUC")
+```
+
+
+
+```{r}
+best_auc <- select_best(tune_res, "roc_auc")
+
+final_knn <- finalize_model(
+  knn_spec,
+  best_auc
+)
+
+final_knn
+```
+
+## Variable importance
+
+```{r}
+rf_prep <- prep(peng_rec)
+juiced <- juice(rf_prep)
+```
+
+
+```{r}
+library(vip)
+
+final_rf %>%
+  set_engine("ranger", importance = "permutation") %>%
+  fit(species ~ .,
+    data = juice(rf_prep)
+  ) %>%
+  vip(geom = "point")
+```
+
+
+
+
+```{r}
+final_wf <- workflow() %>%
+  add_recipe(peng_rec) %>%
+  add_model(final_rf)
+
+final_res <- final_wf %>%
+  last_fit(split)
+
+final_res %>%
+  collect_metrics()
+```
+
+
+
+```{r}
+final_res %>%
+  collect_predictions() %>%
+  mutate(correct = case_when(
+    species == .pred_class ~ "Correct",
+    TRUE ~ "Incorrect"
+  )) %>%
+  bind_cols(peng_test) %>%
+  ggplot(aes(bill_length_mm, bill_depth_mm, color = correct)) +
+  geom_point(size = 2, alpha = 1) +
+  labs(color = NULL) +
+  scale_color_manual(values = c("gray80", "darkred"))
+```
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
