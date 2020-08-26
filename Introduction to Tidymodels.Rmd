@@ -13,18 +13,18 @@ output:
       highlightStyle: github
       highlightLines: true
       countIncrementalSlides: false
-
-
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
-options(htmltools.dir.version = FALSE)
+options(htmltools.dir.version = FALSE, width = 70)
 require(knitr)
 # Set so that long lines in R will be wrapped:
-opts_chunk$set(tidy.opts=list(width.cutoff=50),tidy=TRUE)
+opts_chunk$set(tidy.opts=list(width.cutoff=70), tidy=TRUE)
 ```
 
-# Tidymodels
+## Tidymodels
 
 
 The tidymodels framework is a collection of packages for modeling and machine learning using tidyverse principles.
@@ -36,7 +36,7 @@ The tidymodels framework is a collection of packages for modeling and machine le
 
 ---
 
-# The data
+## The data
 
 ![tidymodels](img/penguins.png)
 
@@ -44,31 +44,279 @@ The data that we will use comes from the [`palmerpenguins` R package](https://al
 
 ---
 
-# Import data
+## Import data
 
 ```{r message=FALSE}
-library(readr)
+library(tidyverse)
 
 #penguins_raw <- read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-07-28/penguins.csv')
 
-penguins_raw <- read_csv("data/penguins.csv")
-penguins_raw
+penguins <- read_csv("data/penguins.csv")
+penguins
 ```
 
 
 ---
-# Exploratory Data Analysis
+## Discover the Data
 
-Dataset discovery
-A first look to our data:
+The dataset is composed by 344 observations (penguins) described by eight variables each.
 
-The dataset is composed by 344 observations (penguins) described by eight variables each. The varibales are presented previously in the table penguins.csv
-
+```{r}
 penguins %>% 
     head()
+```
+
+
+---
+## A summary of the data
+
+```{r}
+penguins %>% 
+    summary()
+```
+
+
+---
+## Some NA data
+
+```{r}
+penguins %>% 
+    is.na() %>% 
+    colSums()
+```
+
+
+
+---
+## Some NA data
+
+```{r}
+penguins %>% 
+    filter(is.na(sex))
+```
+
+
+---
+## Remove observations with NA sex
+
+```{r}
+penguins <- penguins %>% 
+    filter(!is.na(sex))
+```
+
+
+---
+## Three species of penguins 
+
+
+```{r}
+penguins %>% 
+    count(species, sort = TRUE)
+```
+
+
+
+
+---
+## Our penguins live in three islands
+
+
+```{r}
+penguins %>% 
+    count(island, sort = TRUE)
+```
+
+
+
+
+---
+## Who lives where
+
+We can see here that Chinstrap penguins live only in the Dream island, and the same thing for the Gentoo penguins which live only in the Biscoe island, while the Adelie penguins live in the three islands. We notice also that the Torgerson island contain only Adelie penguins.
+
+
+```{r}
+penguins %>% 
+    count(species, island)
+```
+
+
+
+---
+## Who lives where
+
+```{r echo=FALSE}
+penguins %>%
+    ggplot(aes(island, fill = species)) +
+    geom_bar()
+```
+
+
+
+---
+## `Character` to `Factor`
+
+For the species, island and sex columns, we see that their types are character, it must be a factor.
+
+    
+```{r}
+penguins <- penguins %>% 
+    mutate_if(is.character, factor)
+
+penguins %>% 
+  summary()
+```
+
+
+
+---
+## Visual exploration
+
+```{r echo=FALSE}
+penguins %>% 
+    filter(!is.na(sex)) %>% 
+    ggplot(aes(x = bill_length_mm, y = bill_depth_mm, col = species, size = body_mass_g)) +
+        geom_point() + 
+        facet_wrap(~ sex)
+```
+
+
+
+---
+## Histogram distribution
+
+
+```{r echo=FALSE}
+penguins %>% 
+    pivot_longer(bill_length_mm:body_mass_g,
+                 names_to = "measure",
+                 values_to = "value") %>% 
+    ggplot(aes(x = value, fill = species)) +
+    geom_histogram(bins = 15) +
+    facet_wrap(~ measure, scales = "free_x")
+```
+
+
+---
+## Density distribution
+
+```{r echo=FALSE}
+penguins %>% 
+    pivot_longer(bill_length_mm:body_mass_g,
+                 names_to = "measure",
+                 values_to = "value") %>% 
+    ggplot(aes(x = value, fill = species)) +
+    geom_density(alpha = 0.4) +
+    facet_wrap(~ measure, scales = "free")
+```
+
+
+---
+## Boxplot
+
+```{r echo=FALSE}
+penguins %>% 
+    pivot_longer(bill_length_mm:body_mass_g,
+                 names_to = "measure",
+                 values_to = "value") %>% 
+    ggplot(aes(x = species, y = value)) +
+    geom_boxplot() +
+    facet_wrap(~ measure, scales = "free_y")
+```
+
+
+---
+## Modeling with `tidymodels`
+
+
+```{r message=FALSE}
+library(tidymodels)
+```
+
+![tidymodels](img/tidymodels.png)
+---
+## Train / Test data split
+
+```{r}
+set.seed(456)
+train_test_split <- penguins %>% 
+  initial_split(prop = 4/5, strata = species)
+
+train_test_split
+
+penguins_train <- training(train_test_split)
+penguins_test <- testing(train_test_split)
+
+dim(penguins_train)
+dim(penguins_test)
+```
+
+---
+## Create Recipe
+
+
+```{r}
+penguins_rec <- recipe(species ~ ., data = penguins_train) 
+
+penguins_rec %>% 
+  summary()
+```
+
+
+---
+## Step functions
+
+ * step_string2factor(): Convert Strings to Factors
+
+
+```{r}
+penguins_rec <- penguins_rec %>% 
+  step_string2factor(species, island, sex)
+
+penguins_rec %>% 
+  summary()
+```
+
+
+---
+## Update role
+
+```{r}
+penguins_rec <- penguins_rec %>% 
+  update_role(island, sex, year, new_role = "ID")
+
+penguins_rec %>% 
+  summary()
+```
+
+
+---
+## Step functions
+
+ * step_normalize(): Center and scale numeric data
+
+```{r}
+penguins_rec <- penguins_rec %>% 
+  step_normalize(bill_length_mm:body_mass_g)
+
+penguins_rec %>% 
+  summary()
+```
+
+
+---
+## 
+
+
+```{r}
+
+```
+
+
+
 
 ---
 
-# References
+## References
 
  * Tidymodels offcial website [https://www.tidymodels.org/](https://www.tidymodels.org/)

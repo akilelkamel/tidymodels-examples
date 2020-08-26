@@ -4,7 +4,7 @@
     <title>Introduction to Tidymodels</title>
     <meta charset="utf-8" />
     <meta name="author" content="Akil Elkamel" />
-    <meta name="date" content="2020-08-22" />
+    <meta name="date" content="2020-08-26" />
     <link href="libs/remark-css/default.css" rel="stylesheet" />
     <link rel="stylesheet" href="css\default-fonts.css" type="text/css" />
     <link rel="stylesheet" href="css\style.css" type="text/css" />
@@ -15,14 +15,14 @@ class: center, middle, inverse, title-slide
 
 # Introduction to Tidymodels
 ### Akil Elkamel
-### 2020-08-22
+### 2020-08-26
 
 ---
 
 
 
 
-# Tidymodels
+## Tidymodels
 
 
 The tidymodels framework is a collection of packages for modeling and machine learning using tidyverse principles.
@@ -34,7 +34,7 @@ The tidymodels framework is a collection of packages for modeling and machine le
 
 ---
 
-# The data
+## The data
 
 ![tidymodels](img/penguins.png)
 
@@ -46,37 +46,461 @@ The data that we will use comes from the [`palmerpenguins` R package](https://al
 
 
 ```r
-library(readr)
+library(tidyverse)
 
 #penguins_raw &lt;- read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-07-28/penguins.csv')
 
-penguins_raw &lt;- read_csv("data/penguins.csv")
-penguins_raw
+penguins &lt;- read_csv("data/penguins.csv")
+penguins
 ```
 
 ```
 ## # A tibble: 344 x 8
-##    species island bill_length_mm bill_depth_mm flipper_length_~ body_mass_g
-##    &lt;chr&gt;   &lt;chr&gt;           &lt;dbl&gt;         &lt;dbl&gt;            &lt;dbl&gt;       &lt;dbl&gt;
-##  1 Adelie  Torge~           39.1          18.7              181        3750
-##  2 Adelie  Torge~           39.5          17.4              186        3800
-##  3 Adelie  Torge~           40.3          18                195        3250
-##  4 Adelie  Torge~           NA            NA                 NA          NA
-##  5 Adelie  Torge~           36.7          19.3              193        3450
-##  6 Adelie  Torge~           39.3          20.6              190        3650
-##  7 Adelie  Torge~           38.9          17.8              181        3625
-##  8 Adelie  Torge~           39.2          19.6              195        4675
-##  9 Adelie  Torge~           34.1          18.1              193        3475
-## 10 Adelie  Torge~           42            20.2              190        4250
-## # ... with 334 more rows, and 2 more variables: sex &lt;chr&gt;, year &lt;dbl&gt;
+##    species island bill_length_mm bill_depth_mm flipper_length_~
+##    &lt;chr&gt;   &lt;chr&gt;           &lt;dbl&gt;         &lt;dbl&gt;            &lt;dbl&gt;
+##  1 Adelie  Torge~           39.1          18.7              181
+##  2 Adelie  Torge~           39.5          17.4              186
+##  3 Adelie  Torge~           40.3          18                195
+##  4 Adelie  Torge~           NA            NA                 NA
+##  5 Adelie  Torge~           36.7          19.3              193
+##  6 Adelie  Torge~           39.3          20.6              190
+##  7 Adelie  Torge~           38.9          17.8              181
+##  8 Adelie  Torge~           39.2          19.6              195
+##  9 Adelie  Torge~           34.1          18.1              193
+## 10 Adelie  Torge~           42            20.2              190
+## # ... with 334 more rows, and 3 more variables: body_mass_g &lt;dbl&gt;,
+## #   sex &lt;chr&gt;, year &lt;dbl&gt;
+```
+
+
+---
+## Discover the Data
+
+The dataset is composed by 344 observations (penguins) described by eight variables each.
+
+
+```r
+penguins %&gt;% 
+    head()
+```
+
+```
+## # A tibble: 6 x 8
+##   species island bill_length_mm bill_depth_mm flipper_length_~
+##   &lt;chr&gt;   &lt;chr&gt;           &lt;dbl&gt;         &lt;dbl&gt;            &lt;dbl&gt;
+## 1 Adelie  Torge~           39.1          18.7              181
+## 2 Adelie  Torge~           39.5          17.4              186
+## 3 Adelie  Torge~           40.3          18                195
+## 4 Adelie  Torge~           NA            NA                 NA
+## 5 Adelie  Torge~           36.7          19.3              193
+## 6 Adelie  Torge~           39.3          20.6              190
+## # ... with 3 more variables: body_mass_g &lt;dbl&gt;, sex &lt;chr&gt;, year &lt;dbl&gt;
+```
+
+
+---
+## A summary of the data
+
+
+```r
+penguins %&gt;% 
+    summary()
+```
+
+```
+##    species             island          bill_length_mm 
+##  Length:344         Length:344         Min.   :32.10  
+##  Class :character   Class :character   1st Qu.:39.23  
+##  Mode  :character   Mode  :character   Median :44.45  
+##                                        Mean   :43.92  
+##                                        3rd Qu.:48.50  
+##                                        Max.   :59.60  
+##                                        NA's   :2      
+##  bill_depth_mm   flipper_length_mm  body_mass_g       sex           
+##  Min.   :13.10   Min.   :172.0     Min.   :2700   Length:344        
+##  1st Qu.:15.60   1st Qu.:190.0     1st Qu.:3550   Class :character  
+##  Median :17.30   Median :197.0     Median :4050   Mode  :character  
+##  Mean   :17.15   Mean   :200.9     Mean   :4202                     
+##  3rd Qu.:18.70   3rd Qu.:213.0     3rd Qu.:4750                     
+##  Max.   :21.50   Max.   :231.0     Max.   :6300                     
+##  NA's   :2       NA's   :2         NA's   :2                        
+##       year     
+##  Min.   :2007  
+##  1st Qu.:2007  
+##  Median :2008  
+##  Mean   :2008  
+##  3rd Qu.:2009  
+##  Max.   :2009  
+## 
+```
+
+
+---
+## Some NA data
+
+
+```r
+penguins %&gt;% 
+    is.na() %&gt;% 
+    colSums()
+```
+
+```
+##           species            island    bill_length_mm 
+##                 0                 0                 2 
+##     bill_depth_mm flipper_length_mm       body_mass_g 
+##                 2                 2                 2 
+##               sex              year 
+##                11                 0
+```
+
+
+
+---
+## Some NA data
+
+
+```r
+penguins %&gt;% 
+    filter(is.na(sex))
+```
+
+```
+## # A tibble: 11 x 8
+##    species island bill_length_mm bill_depth_mm flipper_length_~
+##    &lt;chr&gt;   &lt;chr&gt;           &lt;dbl&gt;         &lt;dbl&gt;            &lt;dbl&gt;
+##  1 Adelie  Torge~           NA            NA                 NA
+##  2 Adelie  Torge~           34.1          18.1              193
+##  3 Adelie  Torge~           42            20.2              190
+##  4 Adelie  Torge~           37.8          17.1              186
+##  5 Adelie  Torge~           37.8          17.3              180
+##  6 Adelie  Dream            37.5          18.9              179
+##  7 Gentoo  Biscoe           44.5          14.3              216
+##  8 Gentoo  Biscoe           46.2          14.4              214
+##  9 Gentoo  Biscoe           47.3          13.8              216
+## 10 Gentoo  Biscoe           44.5          15.7              217
+## 11 Gentoo  Biscoe           NA            NA                 NA
+## # ... with 3 more variables: body_mass_g &lt;dbl&gt;, sex &lt;chr&gt;, year &lt;dbl&gt;
+```
+
+
+---
+## Remove observations with NA sex
+
+
+```r
+penguins &lt;- penguins %&gt;% 
+    filter(!is.na(sex))
+```
+
+
+---
+## Three species of penguins 
+
+
+
+```r
+penguins %&gt;% 
+    count(species, sort = TRUE)
+```
+
+```
+## # A tibble: 3 x 2
+##   species       n
+##   &lt;chr&gt;     &lt;int&gt;
+## 1 Adelie      146
+## 2 Gentoo      119
+## 3 Chinstrap    68
 ```
 
 
 
 
 ---
+## Our penguins live in three islands
 
-# References
+
+
+```r
+penguins %&gt;% 
+    count(island, sort = TRUE)
+```
+
+```
+## # A tibble: 3 x 2
+##   island        n
+##   &lt;chr&gt;     &lt;int&gt;
+## 1 Biscoe      163
+## 2 Dream       123
+## 3 Torgersen    47
+```
+
+
+
+
+---
+## Who lives where
+
+We can see here that Chinstrap penguins live only in the Dream island, and the same thing for the Gentoo penguins which live only in the Biscoe island, while the Adelie penguins live in the three islands. We notice also that the Torgerson island contain only Adelie penguins.
+
+
+
+```r
+penguins %&gt;% 
+    count(species, island)
+```
+
+```
+## # A tibble: 5 x 3
+##   species   island        n
+##   &lt;chr&gt;     &lt;chr&gt;     &lt;int&gt;
+## 1 Adelie    Biscoe       44
+## 2 Adelie    Dream        55
+## 3 Adelie    Torgersen    47
+## 4 Chinstrap Dream        68
+## 5 Gentoo    Biscoe      119
+```
+
+
+
+---
+## Who lives where
+
+![](Introduction-to-Tidymodels_files/figure-html/unnamed-chunk-10-1.png)&lt;!-- --&gt;
+
+
+
+---
+## `Character` to `Factor`
+
+For the species, island and sex columns, we see that their types are character, it must be a factor.
+
+    
+
+```r
+penguins &lt;- penguins %&gt;% 
+    mutate_if(is.character, factor)
+
+penguins %&gt;% 
+  summary()
+```
+
+```
+##       species          island    bill_length_mm  bill_depth_mm  
+##  Adelie   :146   Biscoe   :163   Min.   :32.10   Min.   :13.10  
+##  Chinstrap: 68   Dream    :123   1st Qu.:39.50   1st Qu.:15.60  
+##  Gentoo   :119   Torgersen: 47   Median :44.50   Median :17.30  
+##                                  Mean   :43.99   Mean   :17.16  
+##                                  3rd Qu.:48.60   3rd Qu.:18.70  
+##                                  Max.   :59.60   Max.   :21.50  
+##  flipper_length_mm  body_mass_g       sex           year     
+##  Min.   :172       Min.   :2700   female:165   Min.   :2007  
+##  1st Qu.:190       1st Qu.:3550   male  :168   1st Qu.:2007  
+##  Median :197       Median :4050                Median :2008  
+##  Mean   :201       Mean   :4207                Mean   :2008  
+##  3rd Qu.:213       3rd Qu.:4775                3rd Qu.:2009  
+##  Max.   :231       Max.   :6300                Max.   :2009
+```
+
+
+
+---
+## Visual exploration
+
+![](Introduction-to-Tidymodels_files/figure-html/unnamed-chunk-12-1.png)&lt;!-- --&gt;
+
+
+
+---
+## Histogram distribution
+
+
+![](Introduction-to-Tidymodels_files/figure-html/unnamed-chunk-13-1.png)&lt;!-- --&gt;
+
+
+---
+## Density distribution
+
+![](Introduction-to-Tidymodels_files/figure-html/unnamed-chunk-14-1.png)&lt;!-- --&gt;
+
+
+---
+## Boxplot
+
+![](Introduction-to-Tidymodels_files/figure-html/unnamed-chunk-15-1.png)&lt;!-- --&gt;
+
+
+---
+## Modeling with `tidymodels`
+
+
+
+```r
+library(tidymodels)
+```
+
+![tidymodels](img/tidymodels.png)
+---
+## Train / Test data split
+
+
+```r
+set.seed(456)
+train_test_split &lt;- penguins %&gt;% 
+  initial_split(prop = 4/5, strata = species)
+
+train_test_split
+```
+
+```
+## &lt;Analysis/Assess/Total&gt;
+## &lt;268/65/333&gt;
+```
+
+```r
+penguins_train &lt;- training(train_test_split)
+penguins_test &lt;- testing(train_test_split)
+
+dim(penguins_train)
+```
+
+```
+## [1] 268   8
+```
+
+```r
+dim(penguins_test)
+```
+
+```
+## [1] 65  8
+```
+
+---
+## Create Recipe
+
+
+
+```r
+penguins_rec &lt;- recipe(species ~ ., data = penguins_train) 
+
+penguins_rec %&gt;% 
+  summary()
+```
+
+```
+## # A tibble: 8 x 4
+##   variable          type    role      source  
+##   &lt;chr&gt;             &lt;chr&gt;   &lt;chr&gt;     &lt;chr&gt;   
+## 1 island            nominal predictor original
+## 2 bill_length_mm    numeric predictor original
+## 3 bill_depth_mm     numeric predictor original
+## 4 flipper_length_mm numeric predictor original
+## 5 body_mass_g       numeric predictor original
+## 6 sex               nominal predictor original
+## 7 year              numeric predictor original
+## 8 species           nominal outcome   original
+```
+
+
+---
+## Step functions
+
+ * step_string2factor(): Convert Strings to Factors
+
+
+
+```r
+penguins_rec &lt;- penguins_rec %&gt;% 
+  step_string2factor(species, island, sex)
+
+penguins_rec %&gt;% 
+  summary()
+```
+
+```
+## # A tibble: 8 x 4
+##   variable          type    role      source  
+##   &lt;chr&gt;             &lt;chr&gt;   &lt;chr&gt;     &lt;chr&gt;   
+## 1 island            nominal predictor original
+## 2 bill_length_mm    numeric predictor original
+## 3 bill_depth_mm     numeric predictor original
+## 4 flipper_length_mm numeric predictor original
+## 5 body_mass_g       numeric predictor original
+## 6 sex               nominal predictor original
+## 7 year              numeric predictor original
+## 8 species           nominal outcome   original
+```
+
+
+---
+## Update role
+
+
+```r
+penguins_rec &lt;- penguins_rec %&gt;% 
+  update_role(island, sex, year, new_role = "ID")
+
+penguins_rec %&gt;% 
+  summary()
+```
+
+```
+## # A tibble: 8 x 4
+##   variable          type    role      source  
+##   &lt;chr&gt;             &lt;chr&gt;   &lt;chr&gt;     &lt;chr&gt;   
+## 1 island            nominal ID        original
+## 2 bill_length_mm    numeric predictor original
+## 3 bill_depth_mm     numeric predictor original
+## 4 flipper_length_mm numeric predictor original
+## 5 body_mass_g       numeric predictor original
+## 6 sex               nominal ID        original
+## 7 year              numeric ID        original
+## 8 species           nominal outcome   original
+```
+
+
+---
+## Step functions
+
+ * step_normalize(): Center and scale numeric data
+
+
+```r
+penguins_rec &lt;- penguins_rec %&gt;% 
+  step_normalize(bill_length_mm:body_mass_g)
+
+penguins_rec %&gt;% 
+  summary()
+```
+
+```
+## # A tibble: 8 x 4
+##   variable          type    role      source  
+##   &lt;chr&gt;             &lt;chr&gt;   &lt;chr&gt;     &lt;chr&gt;   
+## 1 island            nominal ID        original
+## 2 bill_length_mm    numeric predictor original
+## 3 bill_depth_mm     numeric predictor original
+## 4 flipper_length_mm numeric predictor original
+## 5 body_mass_g       numeric predictor original
+## 6 sex               nominal ID        original
+## 7 year              numeric ID        original
+## 8 species           nominal outcome   original
+```
+
+
+---
+## 
+
+
+
+
+
+
+
+---
+
+## References
 
  * Tidymodels offcial website [https://www.tidymodels.org/](https://www.tidymodels.org/)
     </textarea>

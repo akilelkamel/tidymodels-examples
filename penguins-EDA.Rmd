@@ -1,0 +1,595 @@
+---
+title: "Palmer Penguins"
+subtitle: "[TidyTuesday](https://github.com/rfordatascience/tidytuesday)"
+author: "Akil Elkamel"
+date: "7/28/2020"
+output:
+  html_document:
+    toc: true
+    toc_depth: 2
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# The Data
+
+The data this week comes from Dr. Kristen Gorman by way of the palmerpenguins R package by Dr. Kristen Gorman, Dr. Allison Horst, and Dr. Alison Hill.
+
+Their palmerpenguins packagedown site and corresponding GitHub Repo has all the details, which I will duplicate some of below.
+
+You can install their package for reproducible use via install.packages("palmerpenguins").
+
+The goal of palmerpenguins is to provide a great dataset for data exploration & visualization, as an alternative to iris.
+
+We gratefully acknowledge Palmer Station LTER and the US LTER Network. Special thanks to Marty Downs (Director, LTER Network Office) for help regarding the data license & use.
+
+They've bundled both the raw data and the cleaned data together, which I have also included here.
+
+The main measurements are body mass, culmen (bill) length, bill depth, and flipper length.
+
+Get the data here
+
+```{r eval=FALSE}
+# Get the Data
+
+# Read in with tidytuesdayR package 
+# Install from CRAN via: install.packages("tidytuesdayR")
+# This loads the readme and all the datasets for the week of interest
+
+# Either ISO-8601 date or year/week works!
+
+tuesdata <- tidytuesdayR::tt_load('2020-07-28')
+tuesdata <- tidytuesdayR::tt_load(2020, week = 31)
+
+penguins <- tuesdata$penguins
+
+# Or read in the data manually
+
+penguins.csv <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-07-28/penguins.csv')
+
+penguins_raw.csv <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-07-28/penguins_raw.csv')
+```
+
+```{r include=FALSE, eval=FALSE}
+tuesdata <- tidytuesdayR::tt_load('2020-07-28')
+penguins <- tuesdata$penguins 
+```
+
+```{r}
+library(palmerpenguins)
+
+```
+
+
+## Data Dictionary
+
+**penguins.csv**
+
+
+| variable          | class   | description                                              |
+| :---------------- | :------ | :------------------------------------------------------- |
+| species           | integer | Penguin species (Adelie, Gentoo, Chinstrap)              |
+| island            | integer | Island where recorded (Biscoe, Dream, Torgersen)         |
+| bill_length_mm    | double  | Bill length in millimeters (also known as culmen length) |
+| bill_depth_mm     | double  | Bill depth in millimeters (also known as culmen depth)   |
+| flipper_length_mm | integer | Flipper length in mm                                     |
+| body_mass_g       | integer | Body mass in grams                                       |
+| sex               | integer | sex of the animal                                        |
+| year              | integer | year recorded                                            |
+
+
+**penguins_raw.csv**
+
+| variable            | class     | description                                           |
+| :------------------ | :-------- | :---------------------------------------------------- |
+| studyName           | character | Study name                                            |
+| Sample Number       | double    | Sample id                                             |
+| Species             | character | Species of penguin                                    |
+| Region              | character | Region where recorded                                 |
+| Island              | character | Island where recorded                                 |
+| Stage               | character | Stage of egg                                          |
+| Individual ID       | character | Individual penguin ID                                 |
+| Clutch Completion   | character | Egg clutch completion                                 |
+| Date Egg            | double    | Date of egg                                           |
+| Culmen Length (mm)  | double    | culmen length in mm (beak length)                     |
+| Culmen Depth (mm)   | double    | culmen depth in mm (beak depth)                       |
+| Flipper Length (mm) | double    | Flipper length in mm                                  |
+| Body Mass (g)       | double    | Body mass in g                                        |
+| Sex                 | character | Sex of the penguin                                    |
+| Delta 15 N (o/oo)   | double    | Blood isotopic Nitrogen - used for dietary comparison |
+| Delta 13 C (o/oo)   | double    | Blood isotopic Carbon - used for dietary comparison   |
+| Comments            | character | Miscellaneous comments                                |
+
+
+## Cleaning Script
+
+No cleaning script today, feel free to work with the pre-cleaned data or try your hand at the raw data!
+
+
+
+# Exploratory Data Analysis
+
+```{r include=FALSE}
+library(tidyverse)
+```
+
+
+## Dataset discovery
+
+A first look to our data:
+
+The dataset is composed by 344 observations (penguins) described by eight variables each. The varibales are presented previously in the table *penguins.csv*
+
+```{r}
+penguins %>% 
+    head()
+```
+
+A summary of the data:
+
+```{r}
+penguins %>% 
+    summary()
+```
+
+We have three species of penguins distriuted as follow:
+
+```{r}
+penguins %>% 
+    count(species, sort = TRUE)
+```
+
+Our penguins live in three islands
+
+```{r}
+penguins %>% 
+    count(island, sort = TRUE)
+```
+
+We can see here that *Chinstrap* penguins live only in the *Dream* island, and the same thing for the *Gentoo* penguins which live only in the *Biscoe* island, while the *Adelie* penguins live in the three islands. We notice also that the *Torgerson* island contain only *Adelie* penguins.
+
+
+```{r}
+penguins %>% 
+    count(species, island)
+```
+
+
+```{r}
+penguins %>%
+	ggplot(aes(island, fill = species)) +
+	geom_bar()
+```
+
+
+## Data taming
+
+For the species, island and sex columns, we see that their types are `character`, it must be a `factor`.
+
+```{r}
+penguins <- penguins %>% 
+    mutate_if(is.character, factor)
+
+penguins %>% 
+    summary()
+```
+
+## Missing data
+
+We see that we have 11 observations without sex value, among of them two observations are missing also *bill_length_mm*, *bill_depth_mm*, *flipper_length_mm*, and *body_mass_g*.
+
+```{r}
+penguins %>% 
+    is.na() %>% 
+    colSums()
+```
+
+
+```{r}
+# Load the VIM package
+library(VIM)
+
+# Draw an aggregation plot of biopics
+penguins %>% 
+    aggr(combined = TRUE, numbers = TRUE)
+```
+
+
+```{r}
+library(visdat)
+penguins %>% 
+    vis_miss()
+```
+
+
+```{r}
+penguins %>% 
+    filter(is.na(sex))
+```
+
+
+
+In the following we will use penguins without missing data.
+
+```{r}
+penguins <- penguins%>% 
+    filter(!is.na(sex))
+```
+
+## Data imputation
+
+```{r eval=FALSE}
+library(missForest)
+
+penguins <- penguins %>% 
+    mutate(sex_na = is.na(sex))
+
+penguins <- as.data.frame(penguins)
+
+imp_res <- missForest(penguins)
+
+imp_err <- imp_res$OOBerror
+print(imp_err)
+
+# Pair-wise technique
+
+imp_res <- missForest(penguins, variablewise = TRUE)
+
+per_variable_errors <- imp_res$OOBerror
+print(per_variable_errors)
+
+names(per_variable_errors) <- paste(names(penguins),
+                                    names(per_variable_errors), 
+                                    sep = "_")
+
+# Print the renamed errors
+print(per_variable_errors)
+
+imp_res
+```
+
+# Visual exploration
+
+A first visual exploration that shows the distribution of penguins according to "*bill_depth_mm*" vs "*bill_length_mm*".
+
+```{r}
+penguins %>% 
+    filter(!is.na(sex)) %>% 
+    ggplot(aes(x = bill_length_mm, y = bill_depth_mm, col = species, size = body_mass_g)) +
+        geom_point() + 
+        facet_wrap(~ sex)
+```
+
+
+A histogram plot of the different measures that characterize penguins.
+
+```{r}
+penguins %>% 
+    pivot_longer(bill_length_mm:body_mass_g,
+                 names_to = "measure",
+                 values_to = "value") %>% 
+    ggplot(aes(x = value, fill = species)) +
+    geom_histogram(bins = 15) +
+    facet_wrap(~ measure, scales = "free_x")
+```
+
+And here is the distribution of the different measures:
+
+```{r}
+penguins %>% 
+    pivot_longer(bill_length_mm:body_mass_g,
+                 names_to = "measure",
+                 values_to = "value") %>% 
+    ggplot(aes(x = value, fill = species)) +
+    geom_density(alpha = 0.4) +
+    facet_wrap(~ measure, scales = "free")
+```
+
+
+As we see in these boxplots, the *Gento* penguins can be distinguished easily using "*bill_depth_mm*", "*flipper_length_mm*" and "*body_mass_g*".
+
+The "*bill_length_mm*"
+
+```{r}
+penguins %>% 
+    pivot_longer(bill_length_mm:body_mass_g,
+                 names_to = "measure",
+                 values_to = "value") %>% 
+    ggplot(aes(x = species, y = value)) +
+    geom_boxplot() +
+    facet_wrap(~ measure, scales = "free_y")
+```
+
+
+
+
+# Modeling
+
+We will use in this step `tidymodels`.
+
+```{r message=FALSE}
+library(tidymodels)
+```
+
+We minimize our dataset to get only necessary columns:
+
+```{r}
+penguins <- penguins %>% 
+  select(species, bill_length_mm:body_mass_g)
+```
+
+
+## Train / Test data split
+
+```{r}
+train_test_split <- penguins %>% 
+  initial_split(prop = 4/5, strata = species)
+
+penguins_train <- training(train_test_split)
+penguins_test <- testing(train_test_split)
+```
+
+## Evaluation metrics
+
+```{r}
+ev_metrics <- metric_set(accuracy, kap, roc_auc)
+```
+
+```{r}
+models_res <- testing(train_test_split) %>% 
+  select(actual = species)
+```
+
+
+## Multinomial Regression Model
+
+
+```{r}
+multinom_reg_clf <- multinom_reg(mode = "classification", penalty = 0) %>% 
+  set_engine("glmnet") %>% 
+  fit(formula = species ~ bill_length_mm + bill_depth_mm + flipper_length_mm + body_mass_g,
+      data = training(train_test_split))
+
+pred <- testing(train_test_split) %>% 
+  predict(multinom_reg_clf, new_data = .) 
+
+models_res <- models_res %>% 
+  bind_cols(pred) %>% 
+  rename(multinom_reg = .pred_class)
+```
+
+
+## K Nearest Neighbors
+
+```{r}
+knn_clf <- nearest_neighbor(mode = "classification",
+                            neighbors = 13) %>% 
+  set_engine("kknn") %>% 
+  fit(formula = species ~ bill_length_mm + bill_depth_mm + flipper_length_mm + body_mass_g,
+      data = training(train_test_split))
+
+pred <- testing(train_test_split) %>% 
+  predict(knn_clf, new_data = .) 
+
+models_res <- models_res %>% 
+  bind_cols(pred) %>% 
+  rename(knn = .pred_class)
+```
+
+## Support Vector Machine
+
+```{r}
+svm_clf <- svm_poly(mode = "classification") %>% 
+  set_engine("kernlab") %>% 
+  fit(formula = species ~ bill_length_mm + bill_depth_mm + flipper_length_mm + body_mass_g,
+      data = training(train_test_split))
+
+pred <- testing(train_test_split) %>% 
+  predict(svm_clf, new_data = .) 
+
+models_res <- models_res %>% 
+  bind_cols(pred) %>% 
+  rename(svm = .pred_class)
+
+```
+
+
+## Decision Tree
+
+```{r}
+dt_clf <- decision_tree(mode = "classification") %>% 
+  set_engine("rpart") %>% 
+  fit(formula = species ~ bill_length_mm + bill_depth_mm + flipper_length_mm + body_mass_g,
+      data = training(train_test_split))
+
+pred <- testing(train_test_split) %>% 
+  predict(dt_clf, new_data = .) 
+
+models_res <- models_res %>% 
+  bind_cols(pred) %>% 
+  rename(dt = .pred_class)
+
+```
+
+## Random Forest
+
+```{r}
+rf_clf <- rand_forest(mode = "classification") %>% 
+  set_engine("ranger") %>% 
+  fit(formula = species ~ bill_length_mm + bill_depth_mm + flipper_length_mm + body_mass_g,
+      data = training(train_test_split))
+
+pred <- testing(train_test_split) %>% 
+  predict(rf_clf, new_data = .) 
+
+models_res <- models_res %>% 
+  bind_cols(pred) %>% 
+  rename(rf = .pred_class)
+
+```
+
+
+
+```{r}
+models_res
+```
+
+
+
+
+
+```{r}
+table(models_res$actual, models_res$multinom_reg)
+table(models_res$actual, models_res$knn)
+table(models_res$actual, models_res$svm)
+table(models_res$actual, models_res$dt)
+table(models_res$actual, models_res$rf)
+```
+
+
+
+## Advanced
+
+
+### Bootstrap
+
+```{r}
+set.seed(1234)
+penguins_boot <- bootstraps(penguins_train, strata = species)
+```
+
+
+### Workflow
+
+```{r}
+penguins_wf <- workflow() %>% 
+  add_formula(species ~ .)
+
+penguins_wf
+```
+
+### Add models to a workflow
+
+
+We define here some models specifications:
+
+ * KNN 
+ * Random Forest
+
+```{r}
+knn_spec <- nearest_neighbor() %>% 
+  set_mode("classification") %>% 
+  set_engine("kknn")
+
+rf_spec <- rand_forest() %>% 
+  set_mode("classification") %>% 
+  set_engine("ranger")
+```
+ 
+```{r}
+knn_rs <- penguins_wf %>% 
+  add_model(knn_spec) %>% 
+  fit_resamples(
+    resamples = penguins_boot,
+    control = control_resamples(
+      save_pred = TRUE,
+      verbose = TRUE
+    )
+  )
+```
+
+
+```{r}
+rf_rs <- penguins_wf %>% add_model(rf_spec) %>% 
+  fit_resamples(
+    resamples = penguins_boot,
+    control = control_resamples(
+      save_pred = TRUE,
+      verbose = TRUE
+    )
+  )
+```
+
+### Evaluate models
+
+```{r}
+collect_metrics(knn_rs)
+collect_metrics(rf_rs)
+```
+
+
+```{r}
+knn_rs %>% 
+  conf_mat_resampled()
+```
+
+
+### ROC-AUC
+
+With autoplot
+
+```{r}
+knn_rs %>% 
+  collect_predictions() %>%
+  group_by(id) %>% 
+  roc_curve(species, .pred_Adelie:.pred_Gentoo) %>% 
+  autoplot()
+```
+
+
+Manually with ggplot
+
+```{r}
+knn_rs %>% 
+  collect_predictions() %>%
+  group_by(id) %>% 
+  roc_curve(species, .pred_Adelie:.pred_Gentoo) %>% 
+  ggplot(aes(1-specificity, sensitivity, color = id)) + 
+  geom_abline(lty = 2, color = "gray80", size = 1.25) +
+  geom_path(show.legend = FALSE, alpha = 0.7, size = 1.2) +
+  coord_equal() +
+  facet_wrap(~ .level)
+```
+
+
+## Cross-Validation
+
+```{r}
+penguins_train_cv <- penguins_train %>% 
+  rsample::vfold_cv(strata = species)
+
+rf <- rand_forest() %>% 
+  set_mode("classification") %>% 
+  set_engine("randomForest")
+```
+
+```{r}
+wf <- workflow() %>% 
+  add_formula(species ~ .)
+
+res <- wf %>% 
+  add_model(rf) %>% 
+  fit_resamples(
+    resamples = penguins_train_cv,
+    metrics = metric_set(accuracy, kap, roc_auc)
+  )
+
+res %>% 
+  collect_metrics()
+```
+
+
+```{r}
+res %>% 
+  collect_metrics() %>% 
+  ggplot(aes(mean, .metric)) + 
+  geom_point() +
+  geom_errorbarh(aes(xmin = mean - std_err,
+                     xmax = mean + std_err))
+```
+
+
