@@ -4,7 +4,7 @@
     <title>Introduction to Tidymodels</title>
     <meta charset="utf-8" />
     <meta name="author" content="Akil Elkamel" />
-    <meta name="date" content="2020-08-26" />
+    <meta name="date" content="2020-09-03" />
     <link href="libs/remark-css/default.css" rel="stylesheet" />
     <link rel="stylesheet" href="css\default-fonts.css" type="text/css" />
     <link rel="stylesheet" href="css\style.css" type="text/css" />
@@ -15,7 +15,7 @@ class: center, middle, inverse, title-slide
 
 # Introduction to Tidymodels
 ### Akil Elkamel
-### 2020-08-26
+### 2020-09-03
 
 ---
 
@@ -490,11 +490,59 @@ penguins_rec %&gt;%
 
 
 ---
+## Zero Variance (zv) and Near-Zero Variance (nzv) Filters
+
+ * step_zv creates a specification of a recipe step that will remove variables that contain only a single value.
+ * step_nzv creates a specification of a recipe step that will potentially remove variables that are highly sparse and unbalanced.
+
+
+```r
+penguins_rec &lt;- penguins_rec %&gt;% 
+  step_zv(all_predictors()) %&gt;% 
+  step_nzv(all_predictors())
+
+penguins_rec %&gt;% 
+  summary()
+```
+
+```
+## # A tibble: 8 x 4
+##   variable          type    role      source  
+##   &lt;chr&gt;             &lt;chr&gt;   &lt;chr&gt;     &lt;chr&gt;   
+## 1 island            nominal ID        original
+## 2 bill_length_mm    numeric predictor original
+## 3 bill_depth_mm     numeric predictor original
+## 4 flipper_length_mm numeric predictor original
+## 5 body_mass_g       numeric predictor original
+## 6 sex               nominal ID        original
+## 7 year              numeric ID        original
+## 8 species           nominal outcome   original
+```
+
+It seems that we don't have any `nzv` or `zv` predictor.
+
+---
 ## 
 
+# Fit a model with recipe
+
+---
+### KNN: K-Nearest Neighbors
 
 
+```r
+knn_spec &lt;- nearest_neighbor() %&gt;% 
+  set_mode("classification") %&gt;% 
+  set_engine("kknn")
 
+knn_spec
+```
+
+```
+## K-Nearest Neighbor Model Specification (classification)
+## 
+## Computational engine: kknn
+```
 
 
 
