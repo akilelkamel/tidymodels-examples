@@ -18,10 +18,10 @@ editor_options:
 ---
 
 ```{r setup, include=FALSE}
-options(htmltools.dir.version = FALSE, width = 70)
+options(htmltools.dir.version = FALSE, width = 70, message=FALSE, warning=FALSE)
 require(knitr)
 # Set so that long lines in R will be wrapped:
-opts_chunk$set(tidy.opts=list(width.cutoff=70), tidy=TRUE)
+opts_chunk$set(tidy.opts=list(width.cutoff=70), tidy=TRUE, message=FALSE, warning=FALSE)
 ```
 
 ## Tidymodels
@@ -46,7 +46,7 @@ The data that we will use comes from the [`palmerpenguins` R package](https://al
 
 ## Import data
 
-```{r message=FALSE}
+```{r}
 library(tidyverse)
 
 #penguins_raw <- read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-07-28/penguins.csv')
@@ -145,7 +145,7 @@ penguins %>%
 ---
 ## Who lives where
 
-```{r echo=FALSE}
+```{r echo=FALSE, fig.width = 10}
 penguins %>%
     ggplot(aes(island, fill = species)) +
     geom_bar()
@@ -172,7 +172,7 @@ penguins %>%
 ---
 ## Visual exploration
 
-```{r echo=FALSE}
+```{r echo=FALSE, fig.width = 10}
 penguins %>% 
     filter(!is.na(sex)) %>% 
     ggplot(aes(x = bill_length_mm, y = bill_depth_mm, col = species, size = body_mass_g)) +
@@ -186,7 +186,7 @@ penguins %>%
 ## Histogram distribution
 
 
-```{r echo=FALSE}
+```{r echo=FALSE, fig.width = 10}
 penguins %>% 
     pivot_longer(bill_length_mm:body_mass_g,
                  names_to = "measure",
@@ -200,7 +200,7 @@ penguins %>%
 ---
 ## Density distribution
 
-```{r echo=FALSE}
+```{r echo=FALSE, fig.width = 10}
 penguins %>% 
     pivot_longer(bill_length_mm:body_mass_g,
                  names_to = "measure",
@@ -214,7 +214,7 @@ penguins %>%
 ---
 ## Boxplot
 
-```{r echo=FALSE}
+```{r echo=FALSE, fig.width = 10}
 penguins %>% 
     pivot_longer(bill_length_mm:body_mass_g,
                  names_to = "measure",
@@ -271,7 +271,7 @@ penguins_rec %>%
 
 ```{r}
 penguins_rec <- penguins_rec %>% 
-  step_string2factor(species, island, sex)
+  step_string2factor(island, sex)
 
 penguins_rec %>% 
   summary()
@@ -296,8 +296,8 @@ penguins_rec %>%
  * step_normalize(): Center and scale numeric data
 
 ```{r}
-penguins_rec <- penguins_rec %>% 
-  step_normalize(bill_length_mm:body_mass_g)
+#penguins_rec <- penguins_rec %>% 
+  #step_normalize(bill_length_mm:body_mass_g)
 
 penguins_rec %>% 
   summary()
@@ -305,15 +305,129 @@ penguins_rec %>%
 
 
 ---
-## 
+## Zero Variance (zv) and Near-Zero Variance (nzv) Filters
 
+ * step_zv creates a specification of a recipe step that will remove variables that contain only a single value.
+ * step_nzv creates a specification of a recipe step that will potentially remove variables that are highly sparse and unbalanced.
 
 ```{r}
+penguins_rec <- penguins_rec %>% 
+  step_zv(all_predictors()) %>% 
+  step_nzv(all_predictors())
 
+penguins_rec %>% 
+  summary()
+```
+
+It seems that we don't have any `nzv` or `zv` predictor.
+
+---
+## 
+
+# Fit a model with recipe
+
+---
+## KNN: K-Nearest Neighbors
+
+```{r}
+knn_spec <- nearest_neighbor() %>% 
+  set_mode("classification") %>% 
+  set_engine("kknn")
+
+knn_spec
+```
+
+
+---
+## Define a workflow
+
+```{r}
+penguins_wf <- workflow() %>% 
+  add_model(knn_spec) %>% 
+  add_recipe(penguins_rec)
+
+penguins_wf
+```
+
+
+---
+
+## Fit a model with recipe
+
+```{r}
+penguins_fit <- penguins_wf %>% 
+  fit(data = penguins_train)
+
+penguins_fit
+```
+
+
+---
+
+## Prediction using a trained workflow
+
+```{r}
+penguins_pred <- predict(penguins_fit, penguins_test) %>% 
+  bind_cols(penguins_test)
+
+penguins_pred
 ```
 
 
 
+---
+## 
+
+```{r}
+penguins_pred %>% 
+  metrics(truth = species, .pred_class)
+```
+
+---
+## Confusion matrix and Accuracy
+
+```{r}
+penguins_pred %>% 
+  conf_mat(truth = species, .pred_class)
+
+penguins_pred %>% 
+  accuracy(truth = species, .pred_class)
+```
+
+
+---
+## Recall and Precision
+
+```{r}
+penguins_pred %>% 
+  recall(truth = species, .pred_class)
+
+penguins_pred %>% 
+  precision(truth = species, .pred_class, estimator = "micro")
+```
+
+
+---
+## F-measure
+
+```{r}
+penguins_pred %>% 
+  f_meas(truth = species, .pred_class)
+
+penguins_pred %>% 
+  f_meas(truth = species, .pred_class, estimator = "micro")
+```
+
+---
+## Sensitivity and Specificity
+
+```{r}
+penguins_pred %>% 
+  sens(truth = species, .pred_class) # or sensitivity(...)
+
+penguins_pred %>% 
+  spec(truth = species, .pred_class) # or specificity(...)
+```
 
 ---
 

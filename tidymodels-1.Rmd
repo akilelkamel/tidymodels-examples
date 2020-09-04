@@ -2,7 +2,7 @@
 title: "First tidymodels Example"
 output: html_document
 editor_options: 
-  chunk_output_type: inline
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}

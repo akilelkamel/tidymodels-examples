@@ -47,13 +47,7 @@ The data that we will use comes from the [`palmerpenguins` R package](https://al
 
 ```r
 library(tidyverse)
-```
 
-```
-## Warning: package 'ggplot2' was built under R version 4.0.2
-```
-
-```r
 #penguins_raw &lt;- read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-07-28/penguins.csv')
 
 penguins &lt;- read_csv("data/penguins.csv")
@@ -345,50 +339,6 @@ penguins %&gt;%
 library(tidymodels)
 ```
 
-```
-## Warning: package 'tidymodels' was built under R version 4.0.2
-```
-
-```
-## Warning: package 'broom' was built under R version 4.0.2
-```
-
-```
-## Warning: package 'dials' was built under R version 4.0.2
-```
-
-```
-## Warning: package 'infer' was built under R version 4.0.2
-```
-
-```
-## Warning: package 'modeldata' was built under R version 4.0.2
-```
-
-```
-## Warning: package 'parsnip' was built under R version 4.0.2
-```
-
-```
-## Warning: package 'recipes' was built under R version 4.0.2
-```
-
-```
-## Warning: package 'rsample' was built under R version 4.0.2
-```
-
-```
-## Warning: package 'tune' was built under R version 4.0.2
-```
-
-```
-## Warning: package 'workflows' was built under R version 4.0.2
-```
-
-```
-## Warning: package 'yardstick' was built under R version 4.0.2
-```
-
 ![tidymodels](img/tidymodels.png)
 ---
 ## Train / Test data split
@@ -462,7 +412,7 @@ penguins_rec %&gt;%
 
 ```r
 penguins_rec &lt;- penguins_rec %&gt;% 
-  step_string2factor(species, island, sex)
+  step_string2factor(island, sex)
 
 penguins_rec %&gt;% 
   summary()
@@ -517,8 +467,8 @@ penguins_rec %&gt;%
 
 
 ```r
-penguins_rec &lt;- penguins_rec %&gt;% 
-  step_normalize(bill_length_mm:body_mass_g)
+#penguins_rec &lt;- penguins_rec %&gt;% 
+  #step_normalize(bill_length_mm:body_mass_g)
 
 penguins_rec %&gt;% 
   summary()
@@ -540,13 +490,291 @@ penguins_rec %&gt;%
 
 
 ---
+## Zero Variance (zv) and Near-Zero Variance (nzv) Filters
+
+ * step_zv creates a specification of a recipe step that will remove variables that contain only a single value.
+ * step_nzv creates a specification of a recipe step that will potentially remove variables that are highly sparse and unbalanced.
+
+
+```r
+penguins_rec &lt;- penguins_rec %&gt;% 
+  step_zv(all_predictors()) %&gt;% 
+  step_nzv(all_predictors())
+
+penguins_rec %&gt;% 
+  summary()
+```
+
+```
+## # A tibble: 8 x 4
+##   variable          type    role      source  
+##   &lt;chr&gt;             &lt;chr&gt;   &lt;chr&gt;     &lt;chr&gt;   
+## 1 island            nominal ID        original
+## 2 bill_length_mm    numeric predictor original
+## 3 bill_depth_mm     numeric predictor original
+## 4 flipper_length_mm numeric predictor original
+## 5 body_mass_g       numeric predictor original
+## 6 sex               nominal ID        original
+## 7 year              numeric ID        original
+## 8 species           nominal outcome   original
+```
+
+It seems that we don't have any `nzv` or `zv` predictor.
+
+---
+## 
+
+# Fit a model with recipe
+
+---
+## KNN: K-Nearest Neighbors
+
+
+```r
+knn_spec &lt;- nearest_neighbor() %&gt;% 
+  set_mode("classification") %&gt;% 
+  set_engine("kknn")
+
+knn_spec
+```
+
+```
+## K-Nearest Neighbor Model Specification (classification)
+## 
+## Computational engine: kknn
+```
+
+
+---
+## Define a workflow
+
+
+```r
+penguins_wf &lt;- workflow() %&gt;% 
+  add_model(knn_spec) %&gt;% 
+  add_recipe(penguins_rec)
+
+penguins_wf
+```
+
+```
+## == Workflow ====================================================
+## Preprocessor: Recipe
+## Model: nearest_neighbor()
+## 
+## -- Preprocessor ------------------------------------------------
+## 3 Recipe Steps
+## 
+## * step_string2factor()
+## * step_zv()
+## * step_nzv()
+## 
+## -- Model -------------------------------------------------------
+## K-Nearest Neighbor Model Specification (classification)
+## 
+## Computational engine: kknn
+```
+
+
+---
+
+## Fit a model with recipe
+
+
+```r
+penguins_fit &lt;- penguins_wf %&gt;% 
+  fit(data = penguins_train)
+
+penguins_fit
+```
+
+```
+## == Workflow [trained] ==========================================
+## Preprocessor: Recipe
+## Model: nearest_neighbor()
+## 
+## -- Preprocessor ------------------------------------------------
+## 3 Recipe Steps
+## 
+## * step_string2factor()
+## * step_zv()
+## * step_nzv()
+## 
+## -- Model -------------------------------------------------------
+## 
+## Call:
+## kknn::train.kknn(formula = ..y ~ ., data = data, ks = 5)
+## 
+## Type of response variable: nominal
+## Minimal misclassification: 0.01119403
+## Best kernel: optimal
+## Best k: 5
+```
+
+
+---
+
+## Prediction using a trained workflow
+
+
+```r
+penguins_pred &lt;- predict(penguins_fit, penguins_test) %&gt;% 
+  bind_cols(penguins_test)
+
+penguins_pred
+```
+
+```
+## # A tibble: 65 x 9
+##    .pred_class species island bill_length_mm bill_depth_mm
+##    &lt;fct&gt;       &lt;fct&gt;   &lt;fct&gt;           &lt;dbl&gt;         &lt;dbl&gt;
+##  1 Adelie      Adelie  Torge~           41.1          17.6
+##  2 Adelie      Adelie  Torge~           34.6          21.1
+##  3 Adelie      Adelie  Torge~           42.5          20.7
+##  4 Adelie      Adelie  Biscoe           38.8          17.2
+##  5 Adelie      Adelie  Biscoe           40.5          18.9
+##  6 Adelie      Adelie  Dream            37.2          18.1
+##  7 Adelie      Adelie  Dream            39.5          17.8
+##  8 Adelie      Adelie  Dream            36.4          17  
+##  9 Adelie      Adelie  Dream            39.2          21.1
+## 10 Adelie      Adelie  Dream            36            18.5
+## # ... with 55 more rows, and 4 more variables:
+## #   flipper_length_mm &lt;dbl&gt;, body_mass_g &lt;dbl&gt;, sex &lt;fct&gt;, year &lt;dbl&gt;
+```
+
+
+
+---
 ## 
 
 
+```r
+penguins_pred %&gt;% 
+  metrics(truth = species, .pred_class)
+```
+
+```
+## # A tibble: 2 x 3
+##   .metric  .estimator .estimate
+##   &lt;chr&gt;    &lt;chr&gt;          &lt;dbl&gt;
+## 1 accuracy multiclass     0.985
+## 2 kap      multiclass     0.976
+```
+
+---
+## Confusion matrix and Accuracy
 
 
+```r
+penguins_pred %&gt;% 
+  conf_mat(truth = species, .pred_class)
+```
+
+```
+##            Truth
+## Prediction  Adelie Chinstrap Gentoo
+##   Adelie        28         0      0
+##   Chinstrap      1        13      0
+##   Gentoo         0         0     23
+```
+
+```r
+penguins_pred %&gt;% 
+  accuracy(truth = species, .pred_class)
+```
+
+```
+## # A tibble: 1 x 3
+##   .metric  .estimator .estimate
+##   &lt;chr&gt;    &lt;chr&gt;          &lt;dbl&gt;
+## 1 accuracy multiclass     0.985
+```
 
 
+---
+## Recall and Precision
+
+
+```r
+penguins_pred %&gt;% 
+  recall(truth = species, .pred_class)
+```
+
+```
+## # A tibble: 1 x 3
+##   .metric .estimator .estimate
+##   &lt;chr&gt;   &lt;chr&gt;          &lt;dbl&gt;
+## 1 recall  macro          0.989
+```
+
+```r
+penguins_pred %&gt;% 
+  precision(truth = species, .pred_class, estimator = "micro")
+```
+
+```
+## # A tibble: 1 x 3
+##   .metric   .estimator .estimate
+##   &lt;chr&gt;     &lt;chr&gt;          &lt;dbl&gt;
+## 1 precision micro          0.985
+```
+
+
+---
+## F-measure
+
+
+```r
+penguins_pred %&gt;% 
+  f_meas(truth = species, .pred_class)
+```
+
+```
+## # A tibble: 1 x 3
+##   .metric .estimator .estimate
+##   &lt;chr&gt;   &lt;chr&gt;          &lt;dbl&gt;
+## 1 f_meas  macro          0.982
+```
+
+```r
+penguins_pred %&gt;% 
+  f_meas(truth = species, .pred_class, estimator = "micro")
+```
+
+```
+## # A tibble: 1 x 3
+##   .metric .estimator .estimate
+##   &lt;chr&gt;   &lt;chr&gt;          &lt;dbl&gt;
+## 1 f_meas  micro          0.985
+```
+
+---
+## Sensitivity and Specificity
+
+
+```r
+penguins_pred %&gt;% 
+  sens(truth = species, .pred_class) # or sensitivity(...)
+```
+
+```
+## # A tibble: 1 x 3
+##   .metric .estimator .estimate
+##   &lt;chr&gt;   &lt;chr&gt;          &lt;dbl&gt;
+## 1 sens    macro          0.989
+```
+
+```r
+penguins_pred %&gt;% 
+  spec(truth = species, .pred_class) # or specificity(...)
+```
+
+```
+## # A tibble: 1 x 3
+##   .metric .estimator .estimate
+##   &lt;chr&gt;   &lt;chr&gt;          &lt;dbl&gt;
+## 1 spec    macro          0.994
+```
 
 ---
 
