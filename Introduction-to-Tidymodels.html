@@ -4,7 +4,7 @@
     <title>Introduction to Tidymodels</title>
     <meta charset="utf-8" />
     <meta name="author" content="Akil Elkamel" />
-    <meta name="date" content="2020-08-26" />
+    <meta name="date" content="2020-09-04" />
     <link href="libs/remark-css/default.css" rel="stylesheet" />
     <link rel="stylesheet" href="css\default-fonts.css" type="text/css" />
     <link rel="stylesheet" href="css\style.css" type="text/css" />
@@ -15,7 +15,7 @@ class: center, middle, inverse, title-slide
 
 # Introduction to Tidymodels
 ### Akil Elkamel
-### 2020-08-26
+### 2020-09-04
 
 ---
 
@@ -47,7 +47,13 @@ The data that we will use comes from the [`palmerpenguins` R package](https://al
 
 ```r
 library(tidyverse)
+```
 
+```
+## Warning: package 'ggplot2' was built under R version 4.0.2
+```
+
+```r
 #penguins_raw &lt;- read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-07-28/penguins.csv')
 
 penguins &lt;- read_csv("data/penguins.csv")
@@ -337,6 +343,50 @@ penguins %&gt;%
 
 ```r
 library(tidymodels)
+```
+
+```
+## Warning: package 'tidymodels' was built under R version 4.0.2
+```
+
+```
+## Warning: package 'broom' was built under R version 4.0.2
+```
+
+```
+## Warning: package 'dials' was built under R version 4.0.2
+```
+
+```
+## Warning: package 'infer' was built under R version 4.0.2
+```
+
+```
+## Warning: package 'modeldata' was built under R version 4.0.2
+```
+
+```
+## Warning: package 'parsnip' was built under R version 4.0.2
+```
+
+```
+## Warning: package 'recipes' was built under R version 4.0.2
+```
+
+```
+## Warning: package 'rsample' was built under R version 4.0.2
+```
+
+```
+## Warning: package 'tune' was built under R version 4.0.2
+```
+
+```
+## Warning: package 'workflows' was built under R version 4.0.2
+```
+
+```
+## Warning: package 'yardstick' was built under R version 4.0.2
 ```
 
 ![tidymodels](img/tidymodels.png)
