@@ -412,7 +412,7 @@ penguins_rec %&gt;%
 
 ```r
 penguins_rec &lt;- penguins_rec %&gt;% 
-  step_string2factor(species, island, sex)
+  step_string2factor(island, sex)
 
 penguins_rec %&gt;% 
   summary()
@@ -467,8 +467,8 @@ penguins_rec %&gt;%
 
 
 ```r
-penguins_rec &lt;- penguins_rec %&gt;% 
-  step_normalize(bill_length_mm:body_mass_g)
+#penguins_rec &lt;- penguins_rec %&gt;% 
+  #step_normalize(bill_length_mm:body_mass_g)
 
 penguins_rec %&gt;% 
   summary()
@@ -527,7 +527,7 @@ It seems that we don't have any `nzv` or `zv` predictor.
 # Fit a model with recipe
 
 ---
-### KNN: K-Nearest Neighbors
+## KNN: K-Nearest Neighbors
 
 
 ```r
@@ -545,6 +545,167 @@ knn_spec
 ```
 
 
+---
+## Define a workflow
+
+
+```r
+penguins_wf &lt;- workflow() %&gt;% 
+  add_model(knn_spec) %&gt;% 
+  add_recipe(penguins_rec)
+
+penguins_wf
+```
+
+```
+## == Workflow ==========================================================
+## Preprocessor: Recipe
+## Model: nearest_neighbor()
+## 
+## -- Preprocessor ------------------------------------------------------
+## 3 Recipe Steps
+## 
+## * step_string2factor()
+## * step_zv()
+## * step_nzv()
+## 
+## -- Model -------------------------------------------------------------
+## K-Nearest Neighbor Model Specification (classification)
+## 
+## Computational engine: kknn
+```
+
+
+---
+
+
+```r
+penguins_fit &lt;- penguins_wf %&gt;% 
+  fit(data = penguins_train)
+
+penguins_fit
+```
+
+```
+## == Workflow [trained] ================================================
+## Preprocessor: Recipe
+## Model: nearest_neighbor()
+## 
+## -- Preprocessor ------------------------------------------------------
+## 3 Recipe Steps
+## 
+## * step_string2factor()
+## * step_zv()
+## * step_nzv()
+## 
+## -- Model -------------------------------------------------------------
+## 
+## Call:
+## kknn::train.kknn(formula = ..y ~ ., data = data, ks = 5)
+## 
+## Type of response variable: nominal
+## Minimal misclassification: 0.01119403
+## Best kernel: optimal
+## Best k: 5
+```
+
+
+---
+
+## Prediction using a trained workflow
+
+
+```r
+penguins_pred &lt;- 
+  predict(penguins_fit, penguins_test) %&gt;% 
+  bind_cols(penguins_test)
+
+penguins_pred
+```
+
+```
+## # A tibble: 65 x 9
+##    .pred_class species island bill_length_mm bill_depth_mm
+##    &lt;fct&gt;       &lt;fct&gt;   &lt;fct&gt;           &lt;dbl&gt;         &lt;dbl&gt;
+##  1 Adelie      Adelie  Torge~           41.1          17.6
+##  2 Adelie      Adelie  Torge~           34.6          21.1
+##  3 Adelie      Adelie  Torge~           42.5          20.7
+##  4 Adelie      Adelie  Biscoe           38.8          17.2
+##  5 Adelie      Adelie  Biscoe           40.5          18.9
+##  6 Adelie      Adelie  Dream            37.2          18.1
+##  7 Adelie      Adelie  Dream            39.5          17.8
+##  8 Adelie      Adelie  Dream            36.4          17  
+##  9 Adelie      Adelie  Dream            39.2          21.1
+## 10 Adelie      Adelie  Dream            36            18.5
+## # ... with 55 more rows, and 4 more variables:
+## #   flipper_length_mm &lt;dbl&gt;, body_mass_g &lt;dbl&gt;, sex &lt;fct&gt;, year &lt;dbl&gt;
+```
+
+
+---
+##
+
+
+```r
+penguins_pred %&gt;% 
+  conf_mat(truth = species, .pred_class)
+```
+
+```
+##            Truth
+## Prediction  Adelie Chinstrap Gentoo
+##   Adelie        28         0      0
+##   Chinstrap      1        13      0
+##   Gentoo         0         0     23
+```
+
+```r
+penguins_pred %&gt;% 
+  sens(truth = species, .pred_class) # or sensitivity(...)
+```
+
+```
+## # A tibble: 1 x 3
+##   .metric .estimator .estimate
+##   &lt;chr&gt;   &lt;chr&gt;          &lt;dbl&gt;
+## 1 sens    macro          0.989
+```
+
+```r
+penguins_pred %&gt;% 
+  accuracy(truth = species, .pred_class)
+```
+
+```
+## # A tibble: 1 x 3
+##   .metric  .estimator .estimate
+##   &lt;chr&gt;    &lt;chr&gt;          &lt;dbl&gt;
+## 1 accuracy multiclass     0.985
+```
+
+```r
+penguins_pred %&gt;% 
+  recall(truth = species, .pred_class)
+```
+
+```
+## # A tibble: 1 x 3
+##   .metric .estimator .estimate
+##   &lt;chr&gt;   &lt;chr&gt;          &lt;dbl&gt;
+## 1 recall  macro          0.989
+```
+
+```r
+penguins_pred %&gt;% 
+  spec(truth = species, .pred_class) # or specificity(...)
+```
+
+```
+## # A tibble: 1 x 3
+##   .metric .estimator .estimate
+##   &lt;chr&gt;   &lt;chr&gt;          &lt;dbl&gt;
+## 1 spec    macro          0.994
+```
 
 ---
 
