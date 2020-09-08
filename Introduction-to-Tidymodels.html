@@ -4,7 +4,7 @@
     <title>Introduction to Tidymodels</title>
     <meta charset="utf-8" />
     <meta name="author" content="Akil Elkamel" />
-    <meta name="date" content="2020-09-03" />
+    <meta name="date" content="2020-09-04" />
     <link href="libs/remark-css/default.css" rel="stylesheet" />
     <link rel="stylesheet" href="css\default-fonts.css" type="text/css" />
     <link rel="stylesheet" href="css\style.css" type="text/css" />
@@ -15,7 +15,7 @@ class: center, middle, inverse, title-slide
 
 # Introduction to Tidymodels
 ### Akil Elkamel
-### 2020-09-03
+### 2020-09-04
 
 ---
 
@@ -558,18 +558,30 @@ penguins_wf
 ```
 
 ```
+<<<<<<< HEAD
 ## == Workflow ==========================================================
 ## Preprocessor: Recipe
 ## Model: nearest_neighbor()
 ## 
 ## -- Preprocessor ------------------------------------------------------
+=======
+## == Workflow ====================================================
+## Preprocessor: Recipe
+## Model: nearest_neighbor()
+## 
+## -- Preprocessor ------------------------------------------------
+>>>>>>> fb6c5a5ce1130eb6c500c5537b539ca300f71206
 ## 3 Recipe Steps
 ## 
 ## * step_string2factor()
 ## * step_zv()
 ## * step_nzv()
 ## 
+<<<<<<< HEAD
 ## -- Model -------------------------------------------------------------
+=======
+## -- Model -------------------------------------------------------
+>>>>>>> fb6c5a5ce1130eb6c500c5537b539ca300f71206
 ## K-Nearest Neighbor Model Specification (classification)
 ## 
 ## Computational engine: kknn
@@ -578,6 +590,11 @@ penguins_wf
 
 ---
 
+<<<<<<< HEAD
+=======
+## Fit a model with recipe
+
+>>>>>>> fb6c5a5ce1130eb6c500c5537b539ca300f71206
 
 ```r
 penguins_fit &lt;- penguins_wf %&gt;% 
@@ -587,18 +604,30 @@ penguins_fit
 ```
 
 ```
+<<<<<<< HEAD
 ## == Workflow [trained] ================================================
 ## Preprocessor: Recipe
 ## Model: nearest_neighbor()
 ## 
 ## -- Preprocessor ------------------------------------------------------
+=======
+## == Workflow [trained] ==========================================
+## Preprocessor: Recipe
+## Model: nearest_neighbor()
+## 
+## -- Preprocessor ------------------------------------------------
+>>>>>>> fb6c5a5ce1130eb6c500c5537b539ca300f71206
 ## 3 Recipe Steps
 ## 
 ## * step_string2factor()
 ## * step_zv()
 ## * step_nzv()
 ## 
+<<<<<<< HEAD
 ## -- Model -------------------------------------------------------------
+=======
+## -- Model -------------------------------------------------------
+>>>>>>> fb6c5a5ce1130eb6c500c5537b539ca300f71206
 ## 
 ## Call:
 ## kknn::train.kknn(formula = ..y ~ ., data = data, ks = 5)
@@ -616,8 +645,12 @@ penguins_fit
 
 
 ```r
+<<<<<<< HEAD
 penguins_pred &lt;- 
   predict(penguins_fit, penguins_test) %&gt;% 
+=======
+penguins_pred &lt;- predict(penguins_fit, penguins_test) %&gt;% 
+>>>>>>> fb6c5a5ce1130eb6c500c5537b539ca300f71206
   bind_cols(penguins_test)
 
 penguins_pred
@@ -642,8 +675,31 @@ penguins_pred
 ```
 
 
+<<<<<<< HEAD
 ---
 ##
+=======
+
+---
+## 
+
+
+```r
+penguins_pred %&gt;% 
+  metrics(truth = species, .pred_class)
+```
+
+```
+## # A tibble: 2 x 3
+##   .metric  .estimator .estimate
+##   &lt;chr&gt;    &lt;chr&gt;          &lt;dbl&gt;
+## 1 accuracy multiclass     0.985
+## 2 kap      multiclass     0.976
+```
+
+---
+## Confusion matrix and Accuracy
+>>>>>>> fb6c5a5ce1130eb6c500c5537b539ca300f71206
 
 
 ```r
@@ -661,18 +717,9 @@ penguins_pred %&gt;%
 
 ```r
 penguins_pred %&gt;% 
+<<<<<<< HEAD
   sens(truth = species, .pred_class) # or sensitivity(...)
-```
-
-```
-## # A tibble: 1 x 3
-##   .metric .estimator .estimate
-##   &lt;chr&gt;   &lt;chr&gt;          &lt;dbl&gt;
-## 1 sens    macro          0.989
-```
-
-```r
-penguins_pred %&gt;% 
+=======
   accuracy(truth = species, .pred_class)
 ```
 
@@ -683,16 +730,102 @@ penguins_pred %&gt;%
 ## 1 accuracy multiclass     0.985
 ```
 
+
+---
+## Recall and Precision
+
+
 ```r
 penguins_pred %&gt;% 
   recall(truth = species, .pred_class)
+>>>>>>> fb6c5a5ce1130eb6c500c5537b539ca300f71206
 ```
 
 ```
 ## # A tibble: 1 x 3
 ##   .metric .estimator .estimate
 ##   &lt;chr&gt;   &lt;chr&gt;          &lt;dbl&gt;
+<<<<<<< HEAD
+## 1 sens    macro          0.989
+=======
 ## 1 recall  macro          0.989
+>>>>>>> fb6c5a5ce1130eb6c500c5537b539ca300f71206
+```
+
+```r
+penguins_pred %&gt;% 
+<<<<<<< HEAD
+  accuracy(truth = species, .pred_class)
+=======
+  precision(truth = species, .pred_class, estimator = "micro")
+>>>>>>> fb6c5a5ce1130eb6c500c5537b539ca300f71206
+```
+
+```
+## # A tibble: 1 x 3
+<<<<<<< HEAD
+##   .metric  .estimator .estimate
+##   &lt;chr&gt;    &lt;chr&gt;          &lt;dbl&gt;
+## 1 accuracy multiclass     0.985
+```
+
+```r
+penguins_pred %&gt;% 
+  recall(truth = species, .pred_class)
+=======
+##   .metric   .estimator .estimate
+##   &lt;chr&gt;     &lt;chr&gt;          &lt;dbl&gt;
+## 1 precision micro          0.985
+```
+
+
+---
+## F-measure
+
+
+```r
+penguins_pred %&gt;% 
+  f_meas(truth = species, .pred_class)
+>>>>>>> fb6c5a5ce1130eb6c500c5537b539ca300f71206
+```
+
+```
+## # A tibble: 1 x 3
+##   .metric .estimator .estimate
+##   &lt;chr&gt;   &lt;chr&gt;          &lt;dbl&gt;
+<<<<<<< HEAD
+## 1 recall  macro          0.989
+=======
+## 1 f_meas  macro          0.982
+```
+
+```r
+penguins_pred %&gt;% 
+  f_meas(truth = species, .pred_class, estimator = "micro")
+```
+
+```
+## # A tibble: 1 x 3
+##   .metric .estimator .estimate
+##   &lt;chr&gt;   &lt;chr&gt;          &lt;dbl&gt;
+## 1 f_meas  micro          0.985
+```
+
+---
+## Sensitivity and Specificity
+
+
+```r
+penguins_pred %&gt;% 
+  sens(truth = species, .pred_class) # or sensitivity(...)
+```
+
+```
+## # A tibble: 1 x 3
+##   .metric .estimator .estimate
+##   &lt;chr&gt;   &lt;chr&gt;          &lt;dbl&gt;
+## 1 sens    macro          0.989
+>>>>>>> fb6c5a5ce1130eb6c500c5537b539ca300f71206
 ```
 
 ```r

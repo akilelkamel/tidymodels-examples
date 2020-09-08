@@ -18,10 +18,10 @@ editor_options:
 ---
 
 ```{r setup, include=FALSE}
-options(htmltools.dir.version = FALSE, width = 70)
+options(htmltools.dir.version = FALSE, width = 70, message=FALSE, warning=FALSE)
 require(knitr)
 # Set so that long lines in R will be wrapped:
-opts_chunk$set(tidy.opts=list(width.cutoff=70), tidy=TRUE)
+opts_chunk$set(tidy.opts=list(width.cutoff=70), tidy=TRUE, message=FALSE, warning=FALSE)
 ```
 
 ## Tidymodels
@@ -46,7 +46,7 @@ The data that we will use comes from the [`palmerpenguins` R package](https://al
 
 ## Import data
 
-```{r message=FALSE}
+```{r}
 library(tidyverse)
 
 #penguins_raw <- read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-07-28/penguins.csv')
@@ -145,7 +145,7 @@ penguins %>%
 ---
 ## Who lives where
 
-```{r echo=FALSE}
+```{r echo=FALSE, fig.width = 10}
 penguins %>%
     ggplot(aes(island, fill = species)) +
     geom_bar()
@@ -352,6 +352,8 @@ penguins_wf
 
 ---
 
+## Fit a model with recipe
+
 ```{r}
 penguins_fit <- penguins_wf %>% 
   fit(data = penguins_train)
@@ -365,29 +367,63 @@ penguins_fit
 ## Prediction using a trained workflow
 
 ```{r}
-penguins_pred <- 
-  predict(penguins_fit, penguins_test) %>% 
+penguins_pred <- predict(penguins_fit, penguins_test) %>% 
   bind_cols(penguins_test)
 
 penguins_pred
 ```
 
 
+
 ---
-##
+## 
+
+```{r}
+penguins_pred %>% 
+  metrics(truth = species, .pred_class)
+```
+
+---
+## Confusion matrix and Accuracy
 
 ```{r}
 penguins_pred %>% 
   conf_mat(truth = species, .pred_class)
 
 penguins_pred %>% 
-  sens(truth = species, .pred_class) # or sensitivity(...)
-
-penguins_pred %>% 
   accuracy(truth = species, .pred_class)
+```
 
+
+---
+## Recall and Precision
+
+```{r}
 penguins_pred %>% 
   recall(truth = species, .pred_class)
+
+penguins_pred %>% 
+  precision(truth = species, .pred_class, estimator = "micro")
+```
+
+
+---
+## F-measure
+
+```{r}
+penguins_pred %>% 
+  f_meas(truth = species, .pred_class)
+
+penguins_pred %>% 
+  f_meas(truth = species, .pred_class, estimator = "micro")
+```
+
+---
+## Sensitivity and Specificity
+
+```{r}
+penguins_pred %>% 
+  sens(truth = species, .pred_class) # or sensitivity(...)
 
 penguins_pred %>% 
   spec(truth = species, .pred_class) # or specificity(...)
